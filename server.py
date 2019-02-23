@@ -1,5 +1,5 @@
 from requests import Session
-from flask import Flask, render_template, request, make_response, redirect
+from flask import Flask, render_template, request, make_response, redirect, session, url_for, escape
 import sqlite3
 import tweepy
 from textblob import TextBlob
@@ -8,6 +8,8 @@ from textblob import TextBlob
 new_tweets =[]
 
 app = Flask(__name__)
+app.secret_key = 'random_string'
+
 
 conn = sqlite3.connect('twitter.db')
 
@@ -44,6 +46,7 @@ def home_page():
 
 
 @app.route("/twitter_clone", methods=['POST', 'GET'])
+
 def twitter_clone():
     if request.form:
         tweet = request.form['text']
@@ -51,6 +54,11 @@ def twitter_clone():
     conn = sqlite3.connect('twitter.db')
     cur = conn.cursor()
     username = request.cookies.get('userID')
+
+    if username is None:
+        resp = make_response(redirect('/login'))
+        return resp
+
     user_id = cur.execute("SELECT id FROM User WHERE username=?", (username,)).fetchone()[0]
     print(user_id)
 
@@ -64,12 +72,20 @@ def twitter_clone():
 
     rows = cur.fetchall()
 
+
+
     
     return render_template('twitter_clone.html', rows=rows)
 
 
- # @app.route("/logout")
- # return render_template('logout.html')
+@app.route("/logout", methods=['POST' , 'GET'])
+def logout():
+    print("you logged out")
+    resp = make_response(redirect('/login'))
+    resp.set_cookie('userID', '', expires=0)
+    return resp
+
+
 
 @app.route("/register", methods=['GET' , 'POST'])
 def register():
@@ -81,6 +97,7 @@ def register():
         username = request.form['username']
         password = request.form['password']
         query = "INSERT INTO User(username, password) VALUES('{}', '{}')".format(username, password)
+        print(query)
         
 
         cur.execute(query)
@@ -97,20 +114,24 @@ def register():
 
 @app.route("/login", methods=['GET' ,'POST'])
 def login():
-    conn = sqlite3.connect('twitter.db')
-    c = conn.cursor()
 
-    if request.method == 'POST': 
+
+    con = sqlite3.connect("twitter.db")
+    cur = con.cursor()
+        
+    if request.method == 'POST':
         username = request.form['username']
-        password = request.form['password'] 
-        login_user = user(username,password,c)
-        conn.commit()
+        password = request.form['password']
+        cur.execute("SELECT * FROM User where username=? AND password=?", (username, password,)).fetchone()[0]
+        con.commit()
+
         resp = make_response(redirect('/twitter_clone'))
-        resp.set_cookie('userID', username)
+        resp.set_cookie('userID', username)      
 
         return resp
 
     return render_template('login.html')
+
 
 
 @app.route("/tweets_list", methods=['POST', 'GET'])
