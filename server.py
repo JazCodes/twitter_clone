@@ -1,8 +1,5 @@
 from requests import Session
-from flask import Flask
-from flask import render_template
-from flask import request
-
+from flask import Flask, render_template, request, make_response, redirect
 import sqlite3
 import tweepy
 from textblob import TextBlob
@@ -18,14 +15,16 @@ conn = sqlite3.connect('twitter.db')
 
 
 conn.execute('''CREATE TABLE IF NOT EXISTS tweets(
-	id INTEGER PRIMARY KEY AUTOINCREMENT,
-	tweet TEXT)''')
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tweet TEXT,
+    user_id INTEGER,
+    FOREIGN KEY(user_id) REFERENCES user(id) )''')
 
 
 conn.execute('''CREATE TABLE IF NOT EXISTS User(
-	id INTEGER PRIMARY KEY AUTOINCREMENT,
-	username TEXT,
-	password TEXT)''')
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT,
+    password TEXT)''')
 
 
 conn.commit()
@@ -46,41 +45,72 @@ def home_page():
 
 @app.route("/twitter_clone", methods=['POST', 'GET'])
 def twitter_clone():
-	if request.form:
-		tweet = request.form['text']
+    if request.form:
+        tweet = request.form['text']
 
-	conn = sqlite3.connect('twitter.db')
-	cur = conn.cursor()
+    conn = sqlite3.connect('twitter.db')
+    cur = conn.cursor()
+    username = request.cookies.get('userID')
+    user_id = cur.execute("SELECT id FROM User WHERE username=?", (username,)).fetchone()[0]
+    print(user_id)
 
-	if request.method == 'POST':
-		query = "INSERT INTO tweets(tweet) VALUES('{}')".format(tweet)
-		
-		cur.execute(query)
-		conn.commit()
+    if request.method == 'POST':
+        query = "INSERT INTO tweets(tweet, user_id) VALUES('{}', {})".format(tweet, user_id)
+        
+        cur.execute(query)
+        conn.commit()
 
-	if request.method == 'GET':
-		cur.execute('''SELECT tweet FROM tweets''')
+    cur.execute("SELECT * FROM tweets where user_id=?", (user_id,))
 
-		rows = cur.fetchall()
-		
-		return render_template('twitter_clone.html', rows=rows)
-	return render_template('twitter_clone.html')
+    rows = cur.fetchall()
 
-	
-
-
+    
+    return render_template('twitter_clone.html', rows=rows)
 
 
-@app.route("/register", methods=['GET'])
+ # @app.route("/logout")
+ # return render_template('logout.html')
+
+@app.route("/register", methods=['GET' , 'POST'])
 def register():
-	return render_template('register.html')
+        #insert into database
+    conn = sqlite3.connect('twitter.db')
+    cur = conn.cursor()
+
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        query = "INSERT INTO User(username, password) VALUES('{}', '{}')".format(username, password)
+        
+
+        cur.execute(query)
+        conn.commit()
+
+        resp = make_response(redirect('/twitter_clone', 302))
+        resp.set_cookie('userID', username)
+
+        return resp
+
+    return render_template('register.html')
 
 
 
-@app.route("/login", methods=['GET', 'POST'])
-def register():
-	return render_template('register.html')
+@app.route("/login", methods=['GET' ,'POST'])
+def login():
+    conn = sqlite3.connect('twitter.db')
+    c = conn.cursor()
 
+    if request.method == 'POST': 
+        username = request.form['username']
+        password = request.form['password'] 
+        login_user = user(username,password,c)
+        conn.commit()
+        resp = make_response(redirect('/twitter_clone'))
+        resp.set_cookie('userID', username)
+
+        return resp
+
+    return render_template('login.html')
 
 
 @app.route("/tweets_list", methods=['POST', 'GET'])

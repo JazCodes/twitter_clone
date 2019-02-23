@@ -5,18 +5,34 @@
 	<link rel ="stylesheet" type = "text/css" href = "static.css">
 	 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css" integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
 	  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
 </head>
 	 
 <body>
 	<form method="POST" action="/twitter_clone" text-align="center">
 	<input name="text">
     <input type="submit">
-
-
+    <br>
+    <br>
+    <h4>YOUR TWEETS :</h4>
     {% for row in rows %}
     {{row}}
     {% endfor %}
-    
+
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+
+<a href="/login" class="btn btn-info btn-lg">
+	<span class="glyphicon glyphicon-log-out"></span> Log out
+</a>
     
 </form>
 </body>
